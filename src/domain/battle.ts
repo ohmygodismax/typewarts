@@ -1,4 +1,4 @@
-import { lessons } from "./game";
+import { lessons } from "../content/lessons";
 export type Battle = {
   lesson: number;
   task: number;

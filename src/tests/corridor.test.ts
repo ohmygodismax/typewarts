@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { lessons, parseProgress } from './game';
-import { battleWord, newBattle, reduceBattle, turnDuration } from './battle';
-import { corridorStory, epilogueStory, story } from './story';
+import { lessons } from "../content/lessons";
+import { parseProgress } from "../domain/progress";
+import { battleWord, newBattle, reduceBattle, turnDuration } from '../domain/battle';
+import { corridorStory, epilogueStory, story } from '../content/story';
 
 const oldSave = { xp: 500, unlocked: 4, completed: [0, 1, 2, 3, 4], best: 28, intro: true };
 
@@ -77,10 +78,10 @@ test('new story remains separate from the prologue and all scene assets exist', 
   assert.equal(corridorStory.length, 8);
   assert.equal(new Set(corridorStory.map(p => p.id)).size, corridorStory.length);
   for (const panel of [...corridorStory, ...epilogueStory]) {
-    assert.ok(existsSync(new URL('../public/assets/' + panel.image, import.meta.url)), panel.image);
+    assert.ok(existsSync(new URL('../../public/assets/' + panel.image, import.meta.url)), panel.image);
   }
   for (const asset of ['armour-guardian.png', 'corridor-battle.png']) {
-    assert.ok(existsSync(new URL('../public/assets/' + asset, import.meta.url)), asset);
+    assert.ok(existsSync(new URL('../../public/assets/' + asset, import.meta.url)), asset);
   }
 });
 

@@ -1,4 +1,4 @@
-import type { SpeakerAnchors } from "./comic";
+import type { SpeakerAnchors } from "../domain/comicLayout";
 
 export type Speaker = "hero" | "ghost" | "hat" | "keeper" | "knight";
 

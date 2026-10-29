@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseProgress, accuracy, finger, lessons, spells } from "./game";
+import { lessons, spells } from "../content/lessons";
+import { parseProgress } from "../domain/progress";
+import { accuracy, finger } from "../domain/typing";
 test("corrupt saves recover safely", () => {
   for (const input of [null, "broken", "{}", '{"xp":0,"unlocked":99}'])
     assert.equal(parseProgress(input).unlocked, 0);
@@ -21,7 +23,7 @@ test("campaign has one fight per enemy and starts with words", () => {
   assert.deepEqual(lessons.map(l => l.enemyHp), [40, 60]);
 });
 
-import { newBattle, reduceBattle, battleWord, turnDuration } from "./battle";
+import { newBattle, reduceBattle, battleWord, turnDuration } from "../domain/battle";
 const enter = (s: ReturnType<typeof newBattle>, text: string) =>
   [...text].reduce((state, key) => {
     const n = reduceBattle(state, { type: "key", key });

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import { launchGame } from "./Typewarts";
+import { launchGame } from "./runtime/launchGame";
 import "./style.css";
 function Game() {
   const host = useRef<HTMLDivElement>(null);

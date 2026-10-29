@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { TEXT_RESOLUTION } from "./display";
+import { TEXT_RESOLUTION } from "../runtime/display";
 export class MechanicalKeyboard {
   keys = new Map<
     string,

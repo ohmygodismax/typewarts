@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { placeBubble, bubbleTail, overlap } from './comic';
+import { placeBubble, bubbleTail, overlap } from '../domain/comicLayout';
 
 test('dialogue stays inside the frame and avoids faces and captions', () => {
   for (const [width, height] of [[1600, 900], [2100, 900], [1600, 1200]]) {
@@ -32,8 +32,8 @@ test('tails point to speakers on all four sides and stop before the face', () =>
 });
 
 test('speech and thoughts use separate anatomical anchors', async () => {
-  const { dialogueTarget } = await import('./comic');
-  const { story, corridorStory, epilogueStory } = await import('./story');
+  const { dialogueTarget } = await import('../domain/comicLayout');
+  const { story, corridorStory, epilogueStory } = await import('../content/story');
   for (const panel of [...story, ...corridorStory, ...epilogueStory]) {
     if (panel.hero || panel.ghost) continue;
     for (const bubble of panel.bubbles) {
