@@ -77,10 +77,30 @@ export const lessons = [
   },
   {
     name: "Битва с дементором",
-    detail: "Твоё финальное испытание",
+    detail: "Последняя дуэль в классе",
     keys: "Все буквы",
     tasks: [...spells.slice(16), ...spells.slice(16)],
     interval: 5500,
+  },
+  {
+    name: "Страж коридора",
+    detail: "Полные формулы · точность и пробелы",
+    keys: "Все буквы и пробел",
+    tasks: [
+      "Экспеллиармус Редукто",
+      "Протего Максима",
+      "Петрификус Тоталус",
+      "Фините Инкантатем",
+      "Инсендио Диффиндо",
+      "Протего Тоталум",
+      "Левикорпус Иммобулюс",
+      "Протего Максима Фините",
+      "Редукто Экспеллиармус",
+      "Фините Инкантатем Протего",
+      "Петрификус Тоталус Экспеллиармус",
+      "Протего Максима Фините Инкантатем",
+    ],
+    interval: 4500,
   },
 ];
 export type Progress = {
@@ -89,6 +109,7 @@ export type Progress = {
   completed: number[];
   best: number;
   intro: boolean;
+  corridorIntro?: boolean;
 };
 export const emptyProgress: Progress = {
   xp: 0,
@@ -106,17 +127,20 @@ export function parseProgress(raw: string | null): Progress {
       p.xp < 0 ||
       !Number.isInteger(p.unlocked) ||
       p.unlocked < 0 ||
-      p.unlocked > 4 ||
+      p.unlocked >= lessons.length ||
       !Array.isArray(p.completed) ||
       !p.completed.every(
-        (x: unknown) => Number.isInteger(x) && Number(x) >= 0 && Number(x) < 5,
+        (x: unknown) => Number.isInteger(x) && Number(x) >= 0 && Number(x) < lessons.length,
       ) ||
       !Number.isFinite(p.best) ||
       p.best < 0 ||
-      typeof p.intro !== "boolean"
+      typeof p.intro !== "boolean" ||
+      (p.corridorIntro !== undefined && typeof p.corridorIntro !== "boolean")
     )
       return { ...emptyProgress };
-    return p;
+    // Existing players who finished the old final lesson can enter the new chapter.
+    return { ...p, unlocked: p.completed.includes(4) ? Math.max(p.unlocked, 5) : p.unlocked,
+      corridorIntro: p.corridorIntro ?? false };
   } catch {
     return { ...emptyProgress };
   }

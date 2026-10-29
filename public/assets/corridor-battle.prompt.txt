@@ -1,0 +1,3 @@
+Generated with built-in image_gen.
+
+Edit the supplied castle corridor into an empty combat background for the same game. Preserve the original painterly realism, warm amber candlelight, blue shadows, dark oak enchanted doors and gothic architecture. Remove the seated man and mug completely. Show a broader clear section of this corridor with a closed guarded double door at center rear and a glimpse of a stone staircase beyond an adjacent arch. Level camera, wide 16:9 landscape, usable clear floor across the lower half, unoccupied zones on left and right for separately rendered combatants. No characters, no armour, no ghosts, no keyboard or desk, no text, no speech bubbles, no interface.

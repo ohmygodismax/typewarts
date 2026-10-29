@@ -1,8 +1,10 @@
 import type { SpeakerAnchors } from "./comic";
 
+export type Speaker = "hero" | "ghost" | "hat" | "keeper" | "knight";
+
 export type Bubble = {
   text: string;
-  speaker?: "hero" | "ghost" | "hat";
+  speaker?: Speaker;
   kind: "caption" | "speech" | "thought" | "shout";
   position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 };
@@ -15,7 +17,7 @@ export type Panel = {
   ghost?: boolean;
   crop?: string;
   // Mouth and crown positions measured in normalized source-image coordinates.
-  anchors?: Partial<Record<"hero" | "ghost" | "hat", SpeakerAnchors>>;
+  anchors?: Partial<Record<Speaker, SpeakerAnchors>>;
   bubbles: Bubble[];
 };
 export const story: Panel[] = [
@@ -227,4 +229,63 @@ export const story: Panel[] = [
       },
     ],
   },
+];
+
+const meetingAnchors: Panel['anchors'] = {
+  keeper: { mouth: { x: 0.282, y: 0.446 }, head: { x: 0.276, y: 0.28 } },
+  hero: { mouth: { x: 0.622, y: 0.274 }, head: { x: 0.64, y: 0.10 } },
+};
+const encounterAnchors: Panel['anchors'] = {
+  hero: { mouth: { x: 0.283, y: 0.335 }, head: { x: 0.266, y: 0.219 } },
+  knight: { mouth: { x: 0.679, y: 0.232 }, head: { x: 0.69, y: 0.14 } },
+};
+const meeting = (id: string, bubbles: Bubble[]): Panel => ({
+  id, title: 'Читатель в коридоре', image: 'corridor-meeting.png',
+  alt: 'Программист с клавиатурой разговаривает с человеком в бордовой кофте, сидящим с кружкой в коридоре замка.',
+  anchors: meetingAnchors, bubbles,
+});
+const encounter = (id: string, bubbles: Bubble[]): Panel => ({
+  id, title: 'Доступ запрещён', image: 'corridor-encounter.png',
+  alt: 'Пустые зачарованные доспехи с алебардой преграждают программисту путь к лестнице.',
+  anchors: encounterAnchors, bubbles,
+});
+export const corridorStory: Panel[] = [
+  {
+    id: 'corridor-arrival', title: 'По ту сторону двери', image: 'enchanted-corridor.png',
+    alt: 'Длинный коридор зачарованных дверей. На скамье сидит человек с кружкой.',
+    bubbles: [{ kind: 'caption', position: 'top-right',
+      text: 'После последнего испытания дверь наконец открылась. За ней оказался коридор. И, кажется, кто-то уже ждал.' }],
+  },
+  meeting('corridor-exit', [
+    { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'Ты знаешь, где здесь выход?' },
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Знал бы — сидел бы с другой стороны.' },
+    { kind: 'speech', speaker: 'hero', position: 'bottom-right', text: 'Давно ты тут?' },
+  ]),
+  meeting('corridor-books', [
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Уже давно. Фильмы про Гарри Поттера мне никогда не нравились. Книги были лучше.' },
+    { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'И как тебя сюда занесло?' },
+    { kind: 'speech', speaker: 'keeper', position: 'bottom-left', text: 'Написал в комментариях: «В книге всё было иначе». Пришло приглашение лично проверить.' },
+  ]),
+  meeting('corridor-noise', [
+    { kind: 'caption', position: 'top-right', text: 'Из-за двери доносится металлический скрежет.' },
+    { kind: 'speech', speaker: 'hero', position: 'bottom-right', text: 'Что там?' },
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Доспехи охраняют лестницу. В фильме я бы эту сцену промотал.' },
+  ]),
+  encounter('corridor-guard', [
+    { kind: 'shout', speaker: 'knight', position: 'top-right', text: 'НАЗОВИТЕ ЦЕЛЬ ВИЗИТА.' },
+    { kind: 'speech', speaker: 'hero', position: 'top-left', text: 'Выйти из замка.' },
+    { kind: 'shout', speaker: 'knight', position: 'bottom-right', text: 'ДОСТУП ЗАПРЕЩЁН.' },
+  ]),
+  encounter('corridor-permissions', [
+    { kind: 'speech', speaker: 'hero', position: 'top-left', text: 'Понятно. Кнопка выхода есть, прав не хватает.' },
+    { kind: 'caption', position: 'bottom-right', text: 'Рыцарь поднимает алебарду. На лезвии загорается длинная магическая формула.' },
+  ]),
+  meeting('corridor-adaptation', [
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Набирай её целиком, пока он не ударил. Тут уже одним словом не отделаешься.' },
+    { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'И это тоже было в книге?' },
+    { kind: 'speech', speaker: 'keeper', position: 'bottom-left', text: 'Нет. Но я решил больше не спорить с адаптацией.' },
+  ]),
+  encounter('corridor-ready', [
+    { kind: 'caption', position: 'top-left', text: 'Герой поднимает клавиатуру. Полные формулы, меньше времени. Набери весь текст, включая пробелы, чтобы атаковать или защититься.' },
+  ]),
 ];

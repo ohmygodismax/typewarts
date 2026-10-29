@@ -41,6 +41,7 @@ const turnTiming = [
   { minimum: 5, perCharacter: 0.75 },
   { minimum: 4, perCharacter: 0.65 },
   { minimum: 4, perCharacter: 0.55 },
+  { minimum: 4, perCharacter: 0.45 },
 ];
 export function turnDuration(lesson: number, word: string) {
   const timing = turnTiming[lesson];
@@ -66,7 +67,7 @@ export function newBattle(lesson = 0): Battle {
     wrong: 0,
     attack: 0,
     power: 1,
-    hint: "Начни дуэль, когда будешь готов.",
+    hint: lesson === 5 ? "Набирай формулы целиком, включая пробелы. Удар стража отнимает 25 здоровья." : "Начни дуэль, когда будешь готов.",
     attackClock: 0,
     phase: "attack",
     remaining: duration,
@@ -129,7 +130,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
     if (n.remaining === 0) {
       n.combo = 0;
       if (s.phase === "defend") {
-        n.hp = Math.max(0, s.hp - 20);
+        n.hp = Math.max(0, s.hp - (s.lesson === 5 ? 25 : 20));
         n.attack++;
         n.hint = "Заклинание попало в тебя. Теперь твоя атака!";
       } else n.hint = "Время атаки вышло. Приготовься защищаться.";
