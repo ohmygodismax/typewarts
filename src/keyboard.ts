@@ -20,17 +20,20 @@ export class MechanicalKeyboard {
     y: number,
     width: number,
   ) {
-    const unit = width / 23.5,
-      gap = unit * 0.10,
-      rowStep = unit * 0.65,
-      h = rowStep * 0.87;
-    // The key bed occupies the recessed interior of the painted housing.
-    const bedHeight = rowStep * 6.25;
+    // Preserve the artwork's proportions and fit the keys to its recess.
     const caseWidth = width / 0.85;
-    const caseHeight = bedHeight / 0.40;
-    const plate = scene.add.image(x - caseWidth * 0.08, y - caseHeight * 0.28, "keyboardHousing")
-      .setOrigin(0).setDisplaySize(caseWidth, caseHeight);
+    const plate = scene.add.image(x + width / 2, y, "keyboardHousing")
+      .setOrigin(0.5, 0);
+    plate.setScale(caseWidth / plate.width);
+    const caseHeight = plate.displayHeight;
+    plate.setY(y - caseHeight * 0.29);
     parent.add(plate);
+    const bedWidth = caseWidth * 0.80;
+    const keyX = x + (width - bedWidth) / 2;
+    const unit = bedWidth / 23.5,
+      gap = unit * 0.10,
+      rowStep = caseHeight * 0.38 / 6.25,
+      h = rowStep * 0.87;
     const key = (
       code: string,
       label: string,
@@ -39,7 +42,7 @@ export class MechanicalKeyboard {
       w = 1,
       char = "",
     ) => {
-      const xx = x + c * unit + (w * unit - gap) / 2,
+      const xx = keyX + c * unit + (w * unit - gap) / 2,
         yy = y + r * rowStep + h / 2;
       const body = scene.add.image(xx, yy, "keycap")
         .setDisplaySize(w * unit - gap + 4, h + 5);

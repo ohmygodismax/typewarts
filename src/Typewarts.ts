@@ -111,6 +111,8 @@ export class Typewarts extends Phaser.Scene {
   timerLabel?: Phaser.GameObjects.Text;
   mechanical?: MechanicalKeyboard;
   keyUpHandler = (e: KeyboardEvent) => this.mechanical?.up(e.code);
+  // System layout switchers can take focus without hiding the game.
+  blurHandler = () => this.mechanical?.release();
   hint?: Phaser.GameObjects.Text;
   stats?: Phaser.GameObjects.Text;
   keys = new Map<
@@ -152,13 +154,13 @@ export class Typewarts extends Phaser.Scene {
     this.input.keyboard?.on("keydown", this.keyHandler);
     this.input.keyboard?.on("keyup", this.keyUpHandler);
     this.scale.on("resize", this.render, this);
-    this.game.events.on(Phaser.Core.Events.BLUR, this.pause, this);
+    this.game.events.on(Phaser.Core.Events.BLUR, this.blurHandler);
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once("shutdown", () => {
       this.input.keyboard?.off("keydown", this.keyHandler);
       this.input.keyboard?.off("keyup", this.keyUpHandler);
       this.scale.off("resize", this.render, this);
-      this.game.events.off(Phaser.Core.Events.BLUR, this.pause, this);
+      this.game.events.off(Phaser.Core.Events.BLUR, this.blurHandler);
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
     });
     this.render();
@@ -502,8 +504,8 @@ export class Typewarts extends Phaser.Scene {
     }
   }
   drawBattle() {
-    const width = 1000;
-    const boardHeight = 300;
+    const width = Math.min(1200, (this.w - 64) * 0.85);
+    const boardHeight = 340;
     this.keyboardTop = this.h - boardHeight - 24;
     this.stageHeight = this.keyboardTop;
     this.cover("classroom", 0, 0, this.w, this.keyboardTop);
