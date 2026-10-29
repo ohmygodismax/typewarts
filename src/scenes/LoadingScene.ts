@@ -49,6 +49,6 @@ export class LoadingScene extends Phaser.Scene {
       if (!failed) this.scene.start("Typewarts");
     });
     for (const [key, file] of Object.entries(assets))
-      this.load.image(key, "/assets/" + file);
+      this.load.image(key, import.meta.env.BASE_URL + "assets/" + file);
   }
 }
