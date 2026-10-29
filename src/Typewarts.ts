@@ -121,6 +121,8 @@ export class Typewarts extends Phaser.Scene {
   ghost?: Phaser.GameObjects.Image;
   spell?: Phaser.GameObjects.Text;
   typedText?: Phaser.GameObjects.Text;
+  spellBackdrop?: Phaser.GameObjects.Graphics;
+  currentLetter?: Phaser.GameObjects.Text;
   turnLabel?: Phaser.GameObjects.Text;
   timerLabel?: Phaser.GameObjects.Text;
   mechanical?: MechanicalKeyboard;
@@ -155,7 +157,7 @@ export class Typewarts extends Phaser.Scene {
     }
     this.mode = this.progress.intro ? "battle" : "comic";
     this.battle = newBattle(this.progress.unlocked);
-    if (this.progress.intro && this.progress.unlocked === 5 && !this.progress.corridorIntro) {
+    if (this.progress.intro && this.progress.unlocked === 1 && !this.progress.corridorIntro) {
       this.chapter = "corridor";
       this.mode = "comic";
     }
@@ -322,6 +324,10 @@ export class Typewarts extends Phaser.Scene {
     this.mechanical = undefined;
     this.hero = undefined;
     this.ghost = undefined;
+    this.spell = undefined;
+    this.typedText = undefined;
+    this.spellBackdrop = undefined;
+    this.currentLetter = undefined;
   }
   render() {
     if (this.battle.pendingDamage > 0)
@@ -491,7 +497,7 @@ export class Typewarts extends Phaser.Scene {
   comicContinue(margin: number) {
     const width = Math.min(238, this.w - 32),
       x = this.w - margin - width / 2,
-      y = this.h - 42;
+      y = this.h - 24 - 22 - 20;
     const done = this.revealed >= this.currentStory[this.page].bubbles.length;
     const label = done
       ? this.page === this.currentStory.length - 1
@@ -524,7 +530,7 @@ export class Typewarts extends Phaser.Scene {
       else this.progress.intro = true;
       this.save();
       this.mode = "battle";
-      this.battle = newBattle(this.chapter === "corridor" ? 5 : this.progress.unlocked);
+      this.battle = newBattle(this.chapter === "corridor" ? 1 : this.progress.unlocked);
       this.render();
     }
   }
@@ -539,7 +545,7 @@ export class Typewarts extends Phaser.Scene {
     this.tweens.add({ targets: shade, alpha: 1, duration: 900 });
     this.tweens.add({ targets: [title, result], alpha: 1, delay: 900, duration: 650,
       onComplete: () => {
-        this.button(this.w / 2, this.h * 0.67, "Повторить испытание", () => this.startLesson(5), this.hud, 240);
+        this.button(this.w / 2, this.h * 0.67, "Начать игру сначала", () => this.restartGame(), this.hud, 240);
       } });
   }
   drawBattle() {
@@ -547,7 +553,7 @@ export class Typewarts extends Phaser.Scene {
     const boardHeight = 340;
     this.keyboardTop = this.h - boardHeight - 24;
     this.stageHeight = this.keyboardTop;
-    const isKnight = this.battle.lesson === 5;
+    const isKnight = this.battle.lesson === 1;
     this.cover(isKnight ? "corridor" : "classroom", 0, 0, this.w, this.keyboardTop);
     const floor = this.keyboardTop - 20;
     for (const x of [this.w * 0.25, this.w * 0.77]) {
@@ -605,6 +611,8 @@ export class Typewarts extends Phaser.Scene {
     this.timerLabel = this.text(this.w / 2, 131, "", 18, "#f2dab2").setOrigin(
       0.5,
     );
+    this.spellBackdrop = this.add.graphics();
+    this.hud.add(this.spellBackdrop);
     this.spell = this.text(
       this.w / 2,
       this.keyboardTop - 72,
@@ -619,6 +627,8 @@ export class Typewarts extends Phaser.Scene {
       .setFontFamily("Georgia")
       .setOrigin(0, 0.5)
       .setStroke("#131a24", 1);
+    this.currentLetter = this.text(0, 0, "", 38, "#101b29")
+      .setFontFamily("Georgia").setOrigin(0.5);
     this.stats = this.text(
       this.w / 2,
       this.h - 12,
@@ -655,7 +665,7 @@ export class Typewarts extends Phaser.Scene {
     this.spell
       .setText(word)
       .setFontSize(this.small ? 25 : 38)
-      .setColor(b.phase === "attack" ? "#f0d99e" : "#b2d9ed");
+      .setColor("#9aa6b4");
     const max = this.w * 0.65;
     if (this.spell.width > max)
       this.spell.setFontSize(
@@ -664,13 +674,13 @@ export class Typewarts extends Phaser.Scene {
     this.typedText
       ?.setFontSize(this.spell.style.fontSize)
       .setText(word.slice(0, b.pos))
-      .setColor(b.phase === "attack" ? "#ffe4a0" : "#78d9ff");
+      .setColor(b.phase === "attack" ? "#ffe49b" : "#8ee8ff");
     this.turnLabel?.setText(
       b.phase === "attack" ? "ТВОЯ АТАКА" : "ТВОЯ ЗАЩИТА",
     );
     this.timerLabel?.setText(b.active ? `${b.remaining} сек.${b.phase === "attack" ? `  ·  Попытки: ${b.triesLeft}/3` : ""}` : "");
     this.hpBar?.setDisplaySize((this.barWidth * b.hp) / 100, 5);
-    this.enemyBar?.setDisplaySize((this.barWidth * b.enemyHp) / 100, 5);
+    this.enemyBar?.setDisplaySize((this.barWidth * b.enemyHp) / lessons[b.lesson].enemyHp, 5);
     this.mechanical?.highlight(battleWord(b)[b.pos] || "");
     const speed = b.elapsed ? Math.round(b.correct / 5 / (b.elapsed / 60)) : 0;
     this.stats?.setText(
@@ -685,9 +695,41 @@ export class Typewarts extends Phaser.Scene {
     if (!this.spell) return;
     const x = this.w / 2, y = this.keyboardTop - 72;
     this.spell.setPosition(x, y);
-    this.timerLabel?.setPosition(x, y - 38);
-    this.turnLabel?.setPosition(x, y - 64);
-    this.typedText?.setPosition(x - this.spell.width / 2, y);
+    this.timerLabel?.setPosition(x, y - 50);
+    this.turnLabel?.setPosition(x, y - 76);
+    const left = x - this.spell.width / 2;
+    this.typedText?.setPosition(left, y);
+    const word = battleWord(this.battle).toUpperCase();
+    const pos = this.battle.pos;
+    // Measure in the same font as the prompt; font kerning affects the cursor position.
+    const context = this.spell.context;
+    const prefix = context.measureText(word.slice(0, pos)).width;
+    const advance = context.measureText(word.slice(0, pos + 1)).width - prefix;
+    const color = this.battle.phase === "attack" ? 0xffdf83 : 0x8ee8ff;
+    const panelHeight = this.spell.height + 16;
+    const background = this.spellBackdrop;
+    if (background) {
+      background.clear();
+      background.fillStyle(0x08121e, 0.94);
+      background.fillRoundedRect(left - 16, y - panelHeight / 2, this.spell.width + 32, panelHeight, 8);
+      background.lineStyle(1, 0x586879, 0.8);
+      background.strokeRoundedRect(left - 16, y - panelHeight / 2, this.spell.width + 32, panelHeight, 8);
+      if (prefix > 0) {
+        background.fillStyle(color);
+        background.fillRect(left, y + this.spell.height / 2 + 2, prefix, 3);
+      }
+      if (word[pos] && !this.battle.result) {
+        background.fillStyle(color);
+        background.fillRoundedRect(left + prefix - 2, y - this.spell.height / 2 - 2,
+          Math.max(8, advance) + 4, this.spell.height + 4, 3);
+      }
+    }
+    this.currentLetter?.setScale(1).setFontSize(this.spell.style.fontSize)
+      .setText(word[pos] === " " ? "␣" : word[pos] ?? "")
+      .setPosition(left + prefix + advance / 2, y)
+      .setVisible(!!word[pos] && !this.battle.result);
+    if (this.currentLetter && this.currentLetter.width > advance && advance > 0)
+      this.currentLetter.setScale(advance / this.currentLetter.width, 1);
   }
 
   act(action: Action) {
@@ -914,7 +956,7 @@ export class Typewarts extends Phaser.Scene {
       this.h * 0.51 + 112,
       "История",
       () => {
-        this.chapter = this.battle.lesson === 5 ? "corridor" : "intro";
+        this.chapter = this.battle.lesson === 1 ? "corridor" : "intro";
         this.mode = "comic";
         this.page = 0;
         this.revealed = 1;
@@ -960,7 +1002,7 @@ export class Typewarts extends Phaser.Scene {
   }
   showResult() {
     const win = this.battle.result === "win";
-    if (win && this.battle.lesson === 5) {
+    if (win && this.battle.lesson === 1) {
       this.chapter = "epilogue";
       this.mode = "comic";
       this.page = 0;
@@ -973,12 +1015,12 @@ export class Typewarts extends Phaser.Scene {
     this.modalBase(
       win ? "Заклинание освоено!" : "Попробуем ещё раз",
       win
-        ? this.battle.lesson === 5
+        ? this.battle.lesson === 1
           ? "Страж опустил алебарду. Путь к лестнице открыт."
-          : this.battle.lesson === 4
-          ? "Дементор побеждён. За дверью слышны шаги…"
+          : this.battle.lesson === 0
+          ? "Призрак побеждён. За дверью слышны шаги…"
           : "«Ладно. Ещё один урок. Из любопытства»."
-        : this.battle.lesson === 5 ? "Страж оказался быстрее. Попробуй ещё раз — не забывай пробелы."
+        : this.battle.lesson === 1 ? "Страж оказался быстрее. Попробуй ещё раз — не забывай пробелы."
           : "Призрак оказался быстрее. Клавиатура ещё с нами.",
     );
     this.text(
@@ -993,7 +1035,7 @@ export class Typewarts extends Phaser.Scene {
       this.w / 2,
       this.h * 0.57,
       win && this.battle.lesson < lessons.length - 1
-        ? this.battle.lesson === 4 ? "В коридор" : "Следующий урок" : "Ещё раз",
+        ? this.battle.lesson === 0 ? "В коридор" : "Следующий урок" : "Ещё раз",
       () =>
         this.startLesson(
           win ? Math.min(lessons.length - 1, this.battle.lesson + 1) : this.battle.lesson,
@@ -1002,10 +1044,23 @@ export class Typewarts extends Phaser.Scene {
       220,
     );
   }
+  restartGame() {
+    this.progress = parseProgress(null);
+    this.battle = newBattle(0);
+    this.chapter = "intro";
+    this.mode = "comic";
+    this.page = 0;
+    this.revealed = 1;
+    this.lastAdvance = -Infinity;
+    this.modal = false;
+    this.second = 0;
+    this.save();
+    this.render();
+  }
   startLesson(n: number) {
     this.battle = newBattle(n);
     this.mode = "battle";
-    if (n === 5 && !this.progress.corridorIntro) {
+    if (n === 1 && !this.progress.corridorIntro) {
       this.chapter = "corridor";
       this.mode = "comic";
       this.page = 0;
@@ -1050,7 +1105,6 @@ export class Typewarts extends Phaser.Scene {
     }
   }
   update(_time: number, delta: number) {
-    if (this.mode === "battle") this.positionWord();
     this.tweens.timeScale = this.modal && this.battle.paused ? 0 : 1;
     if (
       this.mode !== "battle" ||

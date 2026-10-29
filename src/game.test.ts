@@ -14,11 +14,11 @@ test("Russian finger hints", () => {
   assert.equal(finger("о"), "правый указательный");
   assert.equal(finger(" "), "большой палец");
 });
-test("curriculum has 20 spells and introductory home row", () => {
+test("campaign has one fight per enemy and starts with words", () => {
   assert.equal(new Set(spells).size, 20);
-  for (const word of lessons[0].tasks) assert.match(word, /^[фываолдж ]+$/);
-  assert.equal(lessons[0].interval, 0);
-  assert.ok(lessons[4].interval < lessons[3].interval);
+  assert.equal(lessons.length, 2);
+  for (const word of lessons[0].tasks) assert.ok(word.length > 1);
+  assert.deepEqual(lessons.map(l => l.enemyHp), [40, 60]);
 });
 
 import { newBattle, reduceBattle, battleWord, turnDuration } from "./battle";
@@ -29,26 +29,27 @@ const enter = (s: ReturnType<typeof newBattle>, text: string) =>
       ? reduceBattle(n, { type: "impact", damage: n.pendingDamage })
       : n;
   }, s);
-test("complete lesson unlocks a win only after all exercises", () => {
+test("enemy defeat finishes the fight before exhausting the word list", () => {
   let s = reduceBattle(newBattle(), { type: "start" });
-  for (const word of lessons[0].tasks) s = enter(s, word);
+  while (!s.result) s = enter(s, battleWord(s));
+  assert.ok(s.task < lessons[0].tasks.length);
   assert.equal(s.result, "win");
   assert.equal(s.enemyHp, 0);
   assert.equal(s.active, false);
 });
 test("errors weaken damage and reset combo without advancing", () => {
   const initial = reduceBattle(newBattle(), { type: "start" });
-  const clean = enter(initial, "ф");
+  const clean = enter(initial, battleWord(initial));
   const wrong = enter(initial, "я");
   assert.equal(wrong.pos, 0);
   assert.equal(wrong.combo, 0);
-  const corrected = enter(wrong, "ф");
+  const corrected = enter(wrong, battleWord(wrong));
   assert.ok(corrected.enemyHp > clean.enemyHp);
   assert.equal(corrected.power, 0.65);
-  assert.equal(corrected.attempts, 2);
+  assert.equal(corrected.attempts, battleWord(initial).length + 1);
 });
 test("pause freezes attacks, typing and elapsed time", () => {
-  let s = reduceBattle(newBattle(2), { type: "start" });
+  let s = reduceBattle(newBattle(1), { type: "start" });
   const ticksBeforePause = s.duration - 2;
   for (let i = 0; i < ticksBeforePause; i++) s = reduceBattle(s, { type: "tick" });
   s = reduceBattle(s, { type: "pause" });
@@ -60,15 +61,16 @@ test("pause freezes attacks, typing and elapsed time", () => {
   assert.equal(s.remaining, 1);
 });
 test("enemy attacks end duel and reset clears result", () => {
-  let s = reduceBattle(newBattle(4), { type: "start" });
+  let s = reduceBattle(newBattle(1), { type: "start" });
   for (let i = 0; i < 1000; i++) s = reduceBattle(s, { type: "tick" });
   assert.equal(s.result, "lose");
   assert.equal(s.hp, 0);
-  assert.equal(reduceBattle(s, { type: "reset", lesson: 4 }).result, null);
+  assert.equal(reduceBattle(s, { type: "reset", lesson: 1 }).result, null);
 });
 test("ten clean exercises activate stronger magic", () => {
   let s = reduceBattle(newBattle(), { type: "start" });
-  for (let i = 0; i < 10; i++) s = enter(s, battleWord(s));
+  s = { ...s, combo: 9 };
+  s = enter(s, battleWord(s));
   assert.equal(s.combo, 10);
   assert.equal(s.power, 1.8);
 });
@@ -98,11 +100,11 @@ test("missed defence deals damage but timed-out attack does not", () => {
 
 test("attack damage is applied on projectile impact", () => {
   let s = reduceBattle(newBattle(), { type: "start" });
-  s = reduceBattle(s, { type: "key", key: "ф" });
-  assert.equal(s.enemyHp, 100);
+  for (const key of battleWord(s)) s = reduceBattle(s, { type: "key", key });
+  assert.equal(s.enemyHp, 40);
   assert.ok(s.pendingDamage > 0);
   s = reduceBattle(s, { type: "impact", damage: s.pendingDamage });
-  assert.ok(s.enemyHp < 100);
+  assert.ok(s.enemyHp < 40);
   assert.equal(s.pendingDamage, 0);
 });
 
@@ -113,7 +115,7 @@ test("three attack mistakes pass turn to defence without dealing damage", () => 
   assert.equal(s.phase, "attack");
   s = enter(s, "яя");
   assert.equal(s.phase, "defend");
-  assert.equal(s.enemyHp, 100);
+  assert.equal(s.enemyHp, 40);
   assert.equal(s.hp, 100);
   assert.equal(s.task, 0);
   s = enter(s, battleWord(s));
@@ -129,9 +131,8 @@ test("wrong keyboard layout does not consume an attack try", () => {
 
 test("turn limits are shorter, scale with word length and tighten by lesson", () => {
   assert.equal(turnDuration(0, "ф"), 6);
-  assert.equal(turnDuration(1, "люмос"), 7);
-  assert.equal(turnDuration(2, "протего"), 8);
-  assert.equal(turnDuration(4, "петрификус тоталус"), 12);
+  assert.equal(turnDuration(0, "люмос"), 7);
+  assert.equal(turnDuration(1, "петрификус тоталус"), 12);
   for (let lesson = 0; lesson < lessons.length; lesson++) {
     assert.ok(turnDuration(lesson, "петрификус тоталус") > turnDuration(lesson, "люмос"));
     if (lesson > 0) assert.ok(turnDuration(lesson, "петрификус тоталус") <=

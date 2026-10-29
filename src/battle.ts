@@ -36,12 +36,8 @@ export type Action =
   | { type: "impact"; damage: number };
 // Shared by attack and defence: a short reading allowance plus typing time.
 const turnTiming = [
-  { minimum: 6, perCharacter: 1 },
-  { minimum: 5, perCharacter: 0.9 },
-  { minimum: 5, perCharacter: 0.75 },
-  { minimum: 4, perCharacter: 0.65 },
-  { minimum: 4, perCharacter: 0.55 },
-  { minimum: 4, perCharacter: 0.45 },
+  { minimum: 6, perCharacter: 0.9 },
+  { minimum: 5, perCharacter: 0.55 },
 ];
 export function turnDuration(lesson: number, word: string) {
   const timing = turnTiming[lesson];
@@ -54,7 +50,7 @@ export function newBattle(lesson = 0): Battle {
     task: 0,
     pos: 0,
     hp: 100,
-    enemyHp: 100,
+    enemyHp: lessons[lesson].enemyHp,
     attempts: 0,
     correct: 0,
     combo: 0,
@@ -67,7 +63,7 @@ export function newBattle(lesson = 0): Battle {
     wrong: 0,
     attack: 0,
     power: 1,
-    hint: lesson === 5 ? "Набирай формулы целиком, включая пробелы. Удар стража отнимает 25 здоровья." : "Начни дуэль, когда будешь готов.",
+    hint: lesson === 1 ? "Набирай заклинания целиком, включая пробелы. Удар стража отнимает 25 здоровья." : "Начни дуэль, когда будешь готов.",
     attackClock: 0,
     phase: "attack",
     remaining: duration,
@@ -80,7 +76,7 @@ export function newBattle(lesson = 0): Battle {
 }
 export function battleWord(s: Battle) {
   const words = lessons[s.lesson].tasks;
-  return words[Math.min(s.task, words.length - 1)].toLowerCase();
+  return words[s.task % words.length].toLowerCase();
 }
 function nextTurn(s: Battle) {
   s.phase = s.phase === "attack" ? "defend" : "attack";
@@ -101,7 +97,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
       pendingDamage: Math.max(0, s.pendingDamage - damage),
       enemyHp: Math.max(0, s.enemyHp - damage),
     };
-    if (n.task >= lessons[n.lesson].tasks.length && n.enemyHp < 0.001) {
+    if (n.enemyHp < 0.001) {
       n.result = "win";
       n.active = false;
     }
@@ -130,7 +126,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
     if (n.remaining === 0) {
       n.combo = 0;
       if (s.phase === "defend") {
-        n.hp = Math.max(0, s.hp - (s.lesson === 5 ? 25 : 20));
+        n.hp = Math.max(0, s.hp - (s.lesson === 1 ? 25 : 20));
         n.attack++;
         n.hint = "Заклинание попало в тебя. Теперь твоя атака!";
       } else n.hint = "Время атаки вышло. Приготовься защищаться.";
@@ -168,7 +164,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
   n.task++;
   if (s.phase === "attack") {
     n.cast++;
-    n.pendingDamage += (200 / lessons[s.lesson].tasks.length) * n.power;
+    n.pendingDamage += 20 * n.power;
     n.hint =
       n.power > 1.5
         ? "Комбо! Заклинание усилено."
@@ -177,7 +173,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
     n.blocked++;
     n.hint = "Щит разбил заклинание! Твоя очередь атаковать.";
   }
-  if (n.task >= lessons[s.lesson].tasks.length && n.enemyHp < 0.001) {
+  if (n.enemyHp < 0.001) {
     n.enemyHp = 0;
     n.result = "win";
     n.active = false;

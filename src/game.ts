@@ -22,70 +22,17 @@ export const spells = [
 ];
 export const lessons = [
   {
-    name: "Первые чары",
-    detail: "Домашний ряд · без спешки",
-    keys: "фываолдж",
-    tasks: [
-      "ф",
-      "а",
-      "о",
-      "л",
-      "фыва",
-      "олдж",
-      "фала",
-      "вода",
-      "два",
-      "жало",
-      "фыва олдж",
-      "вода",
-    ],
-    interval: 0,
-  },
-  {
-    name: "Класс заклинаний",
-    detail: "Новые буквы и первые слова",
-    keys: "фываолджйцуке нгшщзхъячсмитьбюэё",
-    tasks: [
-      // New keys are introduced individually before combinations and spells.
-      ...Array.from("йцукенгшщзхъячсмитьбюэёпр"),
-      "ми",
-      "су",
-      "лю",
-      "мос",
-      "нок",
-      "ак",
-      "цио",
-      "репа",
-      "ро",
-      ...spells.slice(0, 5),
-    ],
-    interval: 0,
-  },
-  {
-    name: "Защита от тьмы",
-    detail: "Точность под давлением",
+    name: "Дуэль с призраком",
+    detail: "Короткие заклинания",
     keys: "Все буквы",
-    tasks: spells.slice(5, 12),
-    interval: 10000,
-  },
-  {
-    name: "Дуэль волшебников",
-    detail: "Скорость и реакция",
-    keys: "Все буквы",
-    tasks: spells.slice(12, 18),
-    interval: 7000,
-  },
-  {
-    name: "Битва с дементором",
-    detail: "Последняя дуэль в классе",
-    keys: "Все буквы",
-    tasks: [...spells.slice(16), ...spells.slice(16)],
-    interval: 5500,
+    enemyHp: 40,
+    tasks: ["Люмос", "Протего", "Редукто", "Протего", "Экспеллиармус", "Фините"],
   },
   {
     name: "Страж коридора",
-    detail: "Полные формулы · точность и пробелы",
+    detail: "Длинные заклинания · точность и пробелы",
     keys: "Все буквы и пробел",
+    enemyHp: 60,
     tasks: [
       "Экспеллиармус Редукто",
       "Протего Максима",
@@ -93,17 +40,11 @@ export const lessons = [
       "Фините Инкантатем",
       "Инсендио Диффиндо",
       "Протего Тоталум",
-      "Левикорпус Иммобулюс",
-      "Протего Максима Фините",
-      "Редукто Экспеллиармус",
-      "Фините Инкантатем Протего",
-      "Петрификус Тоталус Экспеллиармус",
-      "Протего Максима Фините Инкантатем",
     ],
-    interval: 4500,
   },
 ];
 export type Progress = {
+  campaignVersion: 2;
   xp: number;
   unlocked: number;
   completed: number[];
@@ -112,6 +53,7 @@ export type Progress = {
   corridorIntro?: boolean;
 };
 export const emptyProgress: Progress = {
+  campaignVersion: 2,
   xp: 0,
   unlocked: 0,
   completed: [],
@@ -121,16 +63,19 @@ export const emptyProgress: Progress = {
 export function parseProgress(raw: string | null): Progress {
   try {
     const p = JSON.parse(raw || "null");
+    const legacy = p?.campaignVersion === undefined;
+    const levelCount = legacy ? 6 : lessons.length;
     if (
       !p ||
+      (!legacy && p.campaignVersion !== 2) ||
       !Number.isFinite(p.xp) ||
       p.xp < 0 ||
       !Number.isInteger(p.unlocked) ||
       p.unlocked < 0 ||
-      p.unlocked >= lessons.length ||
+      p.unlocked >= levelCount ||
       !Array.isArray(p.completed) ||
       !p.completed.every(
-        (x: unknown) => Number.isInteger(x) && Number(x) >= 0 && Number(x) < lessons.length,
+        (x: unknown) => Number.isInteger(x) && Number(x) >= 0 && Number(x) < levelCount,
       ) ||
       !Number.isFinite(p.best) ||
       p.best < 0 ||
@@ -138,9 +83,14 @@ export function parseProgress(raw: string | null): Progress {
       (p.corridorIntro !== undefined && typeof p.corridorIntro !== "boolean")
     )
       return { ...emptyProgress };
-    // Existing players who finished the old final lesson can enter the new chapter.
-    return { ...p, unlocked: p.completed.includes(4) ? Math.max(p.unlocked, 5) : p.unlocked,
-      corridorIntro: p.corridorIntro ?? false };
+    if (legacy) {
+      const ghostDone = p.unlocked > 0 || p.completed.length > 0;
+      const guardianDone = p.completed.includes(5);
+      return { ...p, campaignVersion: 2, unlocked: ghostDone ? 1 : 0,
+        completed: guardianDone ? [0, 1] : ghostDone ? [0] : [],
+        corridorIntro: p.corridorIntro ?? false };
+    }
+    return { ...p, corridorIntro: p.corridorIntro ?? false };
   } catch {
     return { ...emptyProgress };
   }

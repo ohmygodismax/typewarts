@@ -254,7 +254,7 @@ export const corridorStory: Panel[] = [
     id: 'corridor-arrival', title: 'По ту сторону двери', image: 'enchanted-corridor.png',
     alt: 'Длинный коридор зачарованных дверей. На скамье сидит человек с кружкой.',
     bubbles: [{ kind: 'caption', position: 'top-right',
-      text: 'После последнего испытания дверь наконец открылась. За ней оказался коридор. И, кажется, кто-то уже ждал.' }],
+      text: 'После победы над призраком дверь наконец открылась. За ней оказался коридор. И, кажется, кто-то уже ждал.' }],
   },
   meeting('corridor-exit', [
     { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'Ты знаешь, где здесь выход?' },
@@ -269,24 +269,25 @@ export const corridorStory: Panel[] = [
   meeting('corridor-noise', [
     { kind: 'caption', position: 'top-right', text: 'Из-за двери доносится металлический скрежет.' },
     { kind: 'speech', speaker: 'hero', position: 'bottom-right', text: 'Что там?' },
-    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Доспехи охраняют лестницу. В фильме я бы эту сцену промотал.' },
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'За той дверью — лестница. Её охраняют доспехи. В фильме я бы эту сцену промотал.' },
+  ]),
+  meeting('corridor-adaptation', [
+    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'На алебарде появится заклинание. Набирай его целиком, с пробелами, пока страж не ударил.' },
+    { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'И это тоже было в книге?' },
+    { kind: 'speech', speaker: 'keeper', position: 'bottom-left', text: 'Нет. Но я решил больше не спорить с адаптацией. Удачи на лестнице.' },
   ]),
   encounter('corridor-guard', [
+    { kind: 'caption', position: 'top-left', text: 'Попрощавшись с читателем, программист подошёл к двери и взял клавиатуру на изготовку. Путь преградил страж.' },
     { kind: 'shout', speaker: 'knight', position: 'top-right', text: 'НАЗОВИТЕ ЦЕЛЬ ВИЗИТА.' },
     { kind: 'speech', speaker: 'hero', position: 'top-left', text: 'Выйти из замка.' },
     { kind: 'shout', speaker: 'knight', position: 'bottom-right', text: 'ДОСТУП ЗАПРЕЩЁН.' },
   ]),
   encounter('corridor-permissions', [
     { kind: 'speech', speaker: 'hero', position: 'top-left', text: 'Понятно. Кнопка выхода есть, прав не хватает.' },
-    { kind: 'caption', position: 'bottom-right', text: 'Рыцарь поднимает алебарду. На лезвии загорается длинная магическая формула.' },
-  ]),
-  meeting('corridor-adaptation', [
-    { kind: 'speech', speaker: 'keeper', position: 'top-left', text: 'Набирай её целиком, пока он не ударил. Тут уже одним словом не отделаешься.' },
-    { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'И это тоже было в книге?' },
-    { kind: 'speech', speaker: 'keeper', position: 'bottom-left', text: 'Нет. Но я решил больше не спорить с адаптацией.' },
+    { kind: 'caption', position: 'bottom-right', text: 'На поднятой алебарде загорается длинное заклинание. Страж готовится ударить.' },
   ]),
   encounter('corridor-ready', [
-    { kind: 'caption', position: 'top-left', text: 'Герой поднимает клавиатуру. Полные формулы, меньше времени. Набери весь текст, включая пробелы, чтобы атаковать или защититься.' },
+    { kind: 'caption', position: 'top-left', text: 'Пальцы замерли над клавишами. Длинные заклинания, меньше времени. Набери весь текст, включая пробелы, чтобы атаковать или защититься.' },
   ]),
 ];
 
