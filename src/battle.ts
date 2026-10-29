@@ -34,11 +34,17 @@ export type Action =
   | { type: "tick" }
   | { type: "key"; key: string }
   | { type: "impact"; damage: number };
+// Shared by attack and defence: a short reading allowance plus typing time.
+const turnTiming = [
+  { minimum: 6, perCharacter: 1 },
+  { minimum: 5, perCharacter: 0.9 },
+  { minimum: 5, perCharacter: 0.75 },
+  { minimum: 4, perCharacter: 0.65 },
+  { minimum: 4, perCharacter: 0.55 },
+];
 export function turnDuration(lesson: number, word: string) {
-  return Math.max(
-    lesson < 2 ? 20 : 8,
-    Math.ceil(word.length * (lesson < 2 ? 2 : 1.1)) + 8 - lesson,
-  );
+  const timing = turnTiming[lesson];
+  return Math.max(timing.minimum, Math.ceil(word.length * timing.perCharacter) + 2);
 }
 export function newBattle(lesson = 0): Battle {
   const duration = turnDuration(lesson, lessons[lesson].tasks[0]);

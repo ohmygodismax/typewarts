@@ -21,7 +21,7 @@ test("curriculum has 20 spells and introductory home row", () => {
   assert.ok(lessons[4].interval < lessons[3].interval);
 });
 
-import { newBattle, reduceBattle, battleWord } from "./battle";
+import { newBattle, reduceBattle, battleWord, turnDuration } from "./battle";
 const enter = (s: ReturnType<typeof newBattle>, text: string) =>
   [...text].reduce((state, key) => {
     const n = reduceBattle(state, { type: "key", key });
@@ -49,14 +49,15 @@ test("errors weaken damage and reset combo without advancing", () => {
 });
 test("pause freezes attacks, typing and elapsed time", () => {
   let s = reduceBattle(newBattle(2), { type: "start" });
-  for (let i = 0; i < 9; i++) s = reduceBattle(s, { type: "tick" });
+  const ticksBeforePause = s.duration - 2;
+  for (let i = 0; i < ticksBeforePause; i++) s = reduceBattle(s, { type: "tick" });
   s = reduceBattle(s, { type: "pause" });
   assert.deepEqual(reduceBattle(s, { type: "tick" }), s);
   assert.deepEqual(enter(s, "п"), s);
   s = reduceBattle(s, { type: "start" });
   s = reduceBattle(s, { type: "tick" });
   assert.equal(s.hp, 100);
-  assert.equal(s.remaining, newBattle(2).duration - 10);
+  assert.equal(s.remaining, 1);
 });
 test("enemy attacks end duel and reset clears result", () => {
   let s = reduceBattle(newBattle(4), { type: "start" });
@@ -123,4 +124,23 @@ test("three attack mistakes pass turn to defence without dealing damage", () => 
 test("wrong keyboard layout does not consume an attack try", () => {
   const s = reduceBattle(newBattle(), { type: "start" });
   assert.equal(enter(s, "q").triesLeft, 3);
+});
+
+
+test("turn limits are shorter, scale with word length and tighten by lesson", () => {
+  assert.equal(turnDuration(0, "ф"), 6);
+  assert.equal(turnDuration(1, "люмос"), 7);
+  assert.equal(turnDuration(2, "протего"), 8);
+  assert.equal(turnDuration(4, "петрификус тоталус"), 12);
+  for (let lesson = 0; lesson < lessons.length; lesson++) {
+    assert.ok(turnDuration(lesson, "петрификус тоталус") > turnDuration(lesson, "люмос"));
+    if (lesson > 0) assert.ok(turnDuration(lesson, "петрификус тоталус") <=
+      turnDuration(lesson - 1, "петрификус тоталус"));
+    let s = reduceBattle(newBattle(lesson), { type: "start" });
+    const initialDuration = s.duration;
+    for (let i = 0; i < initialDuration; i++) s = reduceBattle(s, { type: "tick" });
+    assert.equal(s.phase, "defend");
+    assert.equal(s.duration, initialDuration);
+    assert.equal(s.remaining, initialDuration);
+  }
 });
