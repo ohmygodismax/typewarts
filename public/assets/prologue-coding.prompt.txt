@@ -1,0 +1,5 @@
+Tool: built-in image_gen
+Reference: prologue-office.png
+Output: prologue-coding.png
+
+Edit this reference into the immediately PRECEDING story scene. Preserve EXACT same adult programmer identity, face, messy hair, glasses, gray hoodie, apartment, desk, rain window, amber lamp, keyboard and rich painterly navy/amber art style. He is NOT asleep yet: sitting upright but slouched, visibly exhausted with tired open eyes, actively typing on the mechanical keyboard and looking at his monitor with stubborn creative enthusiasm. Right hand typing, left near mouse. He wants to build a wizard-school fantasy typing game tonight. Monitor shows a code editor alongside a tiny rough game preview of a gothic castle, no readable text. Cold coffee nearby. Wide landscape 16:9, one single cinematic illustrated panel, not a photo, no collage, no speech bubbles or text (text will be overlaid in UI). Keep his face in middle-right, leave upper-left and lower-right unobtrusive space for comic dialogue. Same visual style and shot continuity as reference. Only change pose from sleeping to awake coding, keep recognizable room and person.
