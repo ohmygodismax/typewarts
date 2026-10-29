@@ -210,40 +210,65 @@ export class Typewarts extends Phaser.Scene {
     action: () => void,
     parent = this.hud,
     width?: number,
+    shortcut?: "Enter",
   ) {
     const t = this.add
-      .text(0, 0, label, {
-        fontFamily: "Arial",
+      .text(shortcut ? -22 : 0, 0, label, {
+        fontFamily: "Georgia",
         fontSize: (this.small ? 13 : 15) + "px",
         color: "#e8d3aa",
         resolution: TEXT_RESOLUTION,
       })
       .setOrigin(0.5);
-    const box = this.add
-      .image(0, 0, "keycap")
-      .setDisplaySize(width ?? t.width + 34, 56)
-      .setInteractive({ useHandCursor: true });
-    const trim = this.add.graphics();
-    const bw = width ?? t.width + 34;
-    trim.lineStyle(1, 0xf1d8a3, 0.55);
-    trim.strokeRect(-bw / 2 + 5, -18, bw - 10, 36);
-    trim.fillStyle(GOLD);
-    for (const sx of [-1, 1]) {
-      trim.fillTriangle(
-        sx * (bw / 2 - 2),
-        0,
-        sx * (bw / 2 - 8),
-        -5,
-        sx * (bw / 2 - 8),
-        5,
-      );
+    const bw = width ?? t.width + (shortcut ? 90 : 44);
+    const height = 44;
+    const panel = this.add.graphics();
+    const draw = (hover: boolean, pressed = false) => {
+      panel.clear();
+      // Cut-corner enamel plaque, independent of the keyboard artwork.
+      const outline = [
+        new Phaser.Geom.Point(-bw / 2 + 8, -height / 2),
+        new Phaser.Geom.Point(bw / 2 - 8, -height / 2),
+        new Phaser.Geom.Point(bw / 2, -height / 2 + 8),
+        new Phaser.Geom.Point(bw / 2, height / 2 - 8),
+        new Phaser.Geom.Point(bw / 2 - 8, height / 2),
+        new Phaser.Geom.Point(-bw / 2 + 8, height / 2),
+        new Phaser.Geom.Point(-bw / 2, height / 2 - 8),
+        new Phaser.Geom.Point(-bw / 2, -height / 2 + 8),
+      ];
+      panel.fillStyle(pressed ? 0x111c29 : hover ? 0x29394a : 0x162332);
+      panel.fillPoints(outline, true);
+      panel.lineStyle(1, hover ? 0xf1d8a3 : GOLD, hover ? 1 : 0.7);
+      panel.strokePoints(outline, true);
+      panel.lineStyle(1, GOLD, 0.22);
+      panel.lineBetween(-bw / 2 + 14, -height / 2 + 5, bw / 2 - 14, -height / 2 + 5);
+      panel.lineBetween(-bw / 2 + 14, height / 2 - 5, bw / 2 - 14, height / 2 - 5);
+      t.setColor(hover ? "#fff0cf" : "#e8d3aa");
+    };
+    draw(false);
+    const c = this.add.container(x, y, [panel, t]);
+    if (shortcut) {
+      // This key hint is shown only where Enter invokes the same action.
+      const keyX = bw / 2 - 29;
+      const cap = this.add.image(keyX, 0, "keycap").setDisplaySize(38, 38);
+      const glyph = this.add.graphics().lineStyle(2, CREAM);
+      glyph.beginPath();
+      glyph.moveTo(keyX + 8, -7);
+      glyph.lineTo(keyX + 8, 3);
+      glyph.lineTo(keyX - 8, 3);
+      glyph.moveTo(keyX - 3, -2);
+      glyph.lineTo(keyX - 8, 3);
+      glyph.lineTo(keyX - 3, 8);
+      glyph.strokePath();
+      c.add([cap, glyph]);
     }
-    const c = this.add.container(x, y, [box, trim, t]);
+    c.setSize(bw, height).setInteractive({ useHandCursor: true });
     parent.add(c);
-    box
-      .on("pointerover", () => box.setTint(0xffe1a5))
-      .on("pointerout", () => box.clearTint())
-      .on("pointerdown", () => {
+    c.on("pointerover", () => draw(true))
+      .on("pointerout", () => draw(false))
+      .on("pointerdown", () => draw(true, true))
+      .on("pointerup", () => {
+        draw(true);
         action();
       });
     return c;
@@ -412,7 +437,6 @@ export class Typewarts extends Phaser.Scene {
   }
   comicContinue(margin: number) {
     const width = Math.min(238, this.w - 32),
-      height = 56,
       x = this.w - margin - width / 2,
       y = this.h - 42;
     const done = this.revealed >= story[this.page].bubbles.length;
@@ -421,43 +445,9 @@ export class Typewarts extends Phaser.Scene {
         ? "Начать игру"
         : "Следующий кадр"
       : "Продолжить";
-    const hit = this.add
-      .image(0, 0, "keycap")
-      .setDisplaySize(width, height + 8)
-      .setInteractive({ useHandCursor: true });
-    const title = this.add
-      .text(-width / 2 + 16, 0, label, {
-        fontFamily: "Arial",
-        fontSize: (this.small ? 13 : 15) + "px",
-        color: "#f1dbb2",
-        resolution: TEXT_RESOLUTION,
-      })
-      .setOrigin(0, 0.5);
-    const cap = this.add.graphics();
-    const cx = width / 2 - 55;
-    cap.fillStyle(0x314458);
-    cap.lineStyle(1, 0xc8b38b);
-    cap.fillRoundedRect(cx, -18, 43, 36, 5);
-    cap.strokeRoundedRect(cx, -18, 43, 36, 5);
-    // Draw the Enter glyph rather than relying on an installed symbol font.
-    cap.lineStyle(2, CREAM);
-    cap.beginPath();
-    cap.moveTo(cx + 31, -9);
-    cap.lineTo(cx + 31, 3);
-    cap.lineTo(cx + 12, 3);
-    cap.moveTo(cx + 18, -3);
-    cap.lineTo(cx + 12, 3);
-    cap.lineTo(cx + 18, 9);
-    cap.strokePath();
-    const trim = this.add.graphics().lineStyle(1, 0xefdab0, 0.5);
-    trim.strokeRect(-width / 2 + 5, -height / 2 + 5, width - 10, height - 10);
-    const group = this.add.container(x, y, [hit, trim, title, cap]);
-    this.hud.add(group);
-    hit
-      .on("pointerover", () => hit.setTint(0xffe1a5))
-      .on("pointerout", () => hit.clearTint())
-      .on("pointerdown", () => this.nextPage());
+    this.button(x, y, label, () => this.nextPage(), this.hud, width, "Enter");
   }
+
   nextPage() {
     const now = performance.now();
     if (now - this.lastAdvance < 160) return;
