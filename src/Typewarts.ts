@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { stageSize, RENDER_SCALE, TEXT_RESOLUTION } from "./display";
 import { MechanicalKeyboard } from "./keyboard";
 import { story } from "./story";
+import { placeBubble, bubbleTail, dialogueTarget, type Point, type Box, type SpeakerAnchors } from "./comic";
 import {
   lessons,
   parseProgress,
@@ -343,11 +344,24 @@ export class Typewarts extends Phaser.Scene {
     const border = this.add.graphics().lineStyle(3, 0xf4eee1, 0.95);
     border.strokeRect(frame, frame, this.w - frame * 2, this.h - frame * 2);
     this.hud.add(border);
+    const anchors: Partial<Record<"hero" | "ghost" | "hat", SpeakerAnchors>> = {};
+    const imagePoint = (image: Phaser.GameObjects.Image, point: Point): Point => ({
+      x: image.x + (point.x - image.originX) * image.displayWidth,
+      y: image.y + (point.y - image.originY) * image.displayHeight,
+    });
+    for (const [speaker, points] of Object.entries(panel.anchors ?? {})) {
+      anchors[speaker as keyof typeof anchors] = {
+        mouth: imagePoint(background, points.mouth),
+        head: imagePoint(background, points.head),
+      };
+    }
     if (panel.hero) {
       const im = this.add
         .image(this.w * 0.4, this.h * 0.94, "hero")
         .setOrigin(0.5, 1);
       im.setScale((this.h * 0.8) / im.height);
+      anchors.hero = { mouth: imagePoint(im, { x: 0.694, y: 0.143 }),
+        head: imagePoint(im, { x: 0.65, y: 0.025 }) };
       this.world.add(im);
     }
     if (panel.ghost) {
@@ -355,6 +369,8 @@ export class Typewarts extends Phaser.Scene {
         .image(this.w * 0.8, this.h * 0.8, "ghost")
         .setOrigin(0.5, 1);
       im.setScale((this.h * 0.58) / im.height);
+      anchors.ghost = { mouth: imagePoint(im, { x: 0.405, y: 0.158 }),
+        head: imagePoint(im, { x: 0.425, y: 0.065 }) };
       this.world.add(im);
     }
     const margin = this.small ? 22 : Math.max(32, this.w * 0.04);
@@ -388,47 +404,63 @@ export class Typewarts extends Phaser.Scene {
       });
       return { b, width, height: txt.height + 28, txt };
     });
-    // Derive placement from measured text, leaving room for tails and the one action.
-    const available = this.h - margin - 100;
-    const total = layouts.reduce((s, l) => s + l.height, 0);
-    const gap = this.small
-      ? Math.max(20, (available - total) / Math.max(1, layouts.length - 1))
-      : 0;
-    let cursor = margin;
+    const bounds = { x: margin, y: margin, width: this.w - margin * 2, height: this.h - margin - 110 };
+    const obstacles: Box[] = Object.values(anchors).map(({ mouth, head }) => ({
+      x: Math.min(mouth.x, head.x) - 60, y: Math.min(mouth.y, head.y) - 25,
+      width: Math.abs(mouth.x - head.x) + 120, height: Math.abs(mouth.y - head.y) + 60,
+    }));
+    const positioned = new Map<number, Box>();
+    // Reserve captions before placing dialogue, including still-hidden bubbles.
+    layouts.forEach(({ b, width, height }, i) => {
+      if (b.kind !== "caption") return;
+      const rect = {
+        x: b.position.endsWith("right") ? this.w - margin - width : margin,
+        y: b.position.startsWith("bottom") ? this.h - 110 - height : margin,
+        width, height,
+      };
+      positioned.set(i, rect);
+      obstacles.push(rect);
+    });
+    layouts.forEach(({ b, width, height }, i) => {
+      if (b.kind === "caption") return;
+      const speaker = b.speaker ? anchors[b.speaker] : undefined;
+      const target = speaker ? dialogueTarget(speaker, b.kind) : undefined;
+      const rect = placeBubble(target ?? { x: this.w / 2, y: this.h / 2 },
+        width, height, bounds, obstacles, b.position);
+      positioned.set(i, rect);
+      obstacles.push({ x: rect.x - 12, y: rect.y - 12, width: width + 24, height: height + 24 });
+    });
     layouts.forEach(({ b, width, height, txt }, i) => {
       if (i >= this.revealed) {
         txt.destroy();
         return;
       }
-      let x = margin,
-        y = margin;
-      if (this.small) {
-        x = i === 1 ? this.w - margin - width : margin;
-        y = cursor;
-        cursor += height + gap;
-      } else {
-        x = b.position.endsWith("right") ? this.w - margin - width : margin;
-        y = b.position.startsWith("bottom") ? this.h - 110 - height : margin;
-      }
+      const rect = positioned.get(i)!;
+      const { x, y } = rect;
       const box = this.add.graphics();
-      box.fillStyle(
-        b.kind === "caption" ? 0xddc695 : b.kind === "shout" ? 0xf3ce85 : CREAM,
-      );
+      const fill = b.kind === "caption" ? 0xddc695 : b.kind === "shout" ? 0xf3ce85 : CREAM;
+      const speaker = b.speaker ? anchors[b.speaker] : undefined;
+      const target = speaker ? dialogueTarget(speaker, b.kind) : undefined;
+      const tail = target ? bubbleTail(rect, target) : undefined;
+      box.fillStyle(fill);
       box.lineStyle(2, 0x332a21);
+      if (tail && b.kind !== "thought") {
+        box.fillTriangle(tail.a.x, tail.a.y, tail.tip.x, tail.tip.y, tail.b.x, tail.b.y);
+        box.strokeTriangle(tail.a.x, tail.a.y, tail.tip.x, tail.tip.y, tail.b.x, tail.b.y);
+      }
       box.fillRoundedRect(x, y, width, height, b.kind === "caption" ? 3 : 20);
       box.strokeRoundedRect(x, y, width, height, b.kind === "caption" ? 3 : 20);
-      if (b.kind === "speech") {
-        box.fillTriangle(
-          x + 28,
-          y + height - 1,
-          x + 48,
-          y + height - 1,
-          x + 29,
-          y + height + 18,
-        );
-      } else if (b.kind === "thought") {
-        box.fillCircle(x + 35, y + height + 13, 6);
-        box.fillCircle(x + 27, y + height + 28, 3);
+      if (tail && b.kind !== "thought") {
+        // Remove only the shared base so the outlined tail joins the bubble.
+        box.lineStyle(3, fill);
+        box.lineBetween(tail.a.x, tail.a.y, tail.b.x, tail.b.y);
+      } else if (tail) {
+        for (const [fraction, radius] of [[0.25, 7], [0.62, 5], [1, 3]]) {
+          const cx = tail.base.x + (tail.tip.x - tail.base.x) * fraction;
+          const cy = tail.base.y + (tail.tip.y - tail.base.y) * fraction;
+          box.fillCircle(cx, cy, radius);
+          box.strokeCircle(cx, cy, radius);
+        }
       }
       txt.setPosition(x + 18, y + 14);
       this.hud.add([box, txt]);
