@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { STAGE_WIDTH, STAGE_HEIGHT, RENDER_SCALE, TEXT_RESOLUTION } from "./display";
+import { stageSize, RENDER_SCALE, TEXT_RESOLUTION } from "./display";
 import { MechanicalKeyboard } from "./keyboard";
 import { story } from "./story";
 import {
@@ -47,7 +47,7 @@ class Loading extends Phaser.Scene {
     super("Loading");
   }
   preload() {
-    const w = STAGE_WIDTH, h = STAGE_HEIGHT;
+    const w = this.scale.width / RENDER_SCALE, h = this.scale.height / RENDER_SCALE;
     this.cameras.main.setOrigin(0, 0).setZoom(RENDER_SCALE);
     this.cameras.main.setBackgroundColor("#09121c");
     this.add
@@ -163,13 +163,13 @@ export class Typewarts extends Phaser.Scene {
     this.render();
   }
   get w() {
-    return STAGE_WIDTH;
+    return this.scale.width / RENDER_SCALE;
   }
   get h() {
-    return STAGE_HEIGHT;
+    return this.scale.height / RENDER_SCALE;
   }
   get small() {
-    return false; // Desktop composition only; the canvas scales as a whole.
+    return false; // Keep the desktop controls while the stage expands with the window.
   }
   text(
     x: number,
@@ -996,15 +996,41 @@ export class Typewarts extends Phaser.Scene {
 }
 
 export function launchGame(parent: HTMLElement) {
+  const width = parent.clientWidth || window.innerWidth;
+  const height = parent.clientHeight || window.innerHeight;
+  const size = stageSize(width, height);
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     backgroundColor: "#09121c",
     scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: STAGE_WIDTH * RENDER_SCALE,
-      height: STAGE_HEIGHT * RENDER_SCALE,
+      mode: Phaser.Scale.NONE,
+      autoCenter: Phaser.Scale.NO_CENTER,
+      zoom: width / (size.width * RENDER_SCALE),
+      width: size.width * RENDER_SCALE,
+      height: size.height * RENDER_SCALE,
+    },
+    callbacks: {
+      postBoot: (game) => {
+        const observer = new ResizeObserver(() => {
+          const { clientWidth: width, clientHeight: height } = parent;
+          if (!width || !height) return;
+          const next = stageSize(width, height);
+          const renderWidth = next.width * RENDER_SCALE;
+          const renderHeight = next.height * RENDER_SCALE;
+          const zoom = width / renderWidth;
+          if (Math.abs(game.scale.zoom - zoom) > 0.000001) {
+            game.scale.setZoom(zoom);
+          }
+          if (Math.abs(game.scale.width - renderWidth) > 0.01 ||
+              Math.abs(game.scale.height - renderHeight) > 0.01) {
+            game.scale.resize(renderWidth, renderHeight);
+          }
+          game.scale.updateBounds();
+        });
+        observer.observe(parent);
+        game.events.once(Phaser.Core.Events.DESTROY, () => observer.disconnect());
+      },
     },
     scene: [Loading, Typewarts],
     audio: { noAudio: true },

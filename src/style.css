@@ -1,1 +1,1 @@
-*{box-sizing:border-box}html,body,#root{margin:0;width:100%;height:100%;background:#09121c;overflow:hidden}.game-host{width:100%;height:100dvh;background:#09121c}canvas{display:block;touch-action:none}
+*{box-sizing:border-box}html,body,#root{margin:0;width:100%;height:100%;background:#09121c;overflow:hidden}.game-host{position:fixed;inset:0;width:100%;height:100dvh;overflow:hidden;background:#09121c}canvas{display:block;touch-action:none}
