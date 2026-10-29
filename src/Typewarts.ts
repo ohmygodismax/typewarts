@@ -598,7 +598,7 @@ export class Typewarts extends Phaser.Scene {
     if (!this.battle.active && !this.battle.result)
       this.button(
         this.w / 2,
-        this.keyboardTop - 140,
+        this.keyboardTop - 200,
         "Начать дуэль",
         () => this.act({ type: "start" }),
         this.hud,
@@ -613,17 +613,18 @@ export class Typewarts extends Phaser.Scene {
     this.spell
       .setText(word)
       .setFontSize(this.small ? 25 : 38)
-      .setColor(b.phase === "attack" ? "#f0d99e" : "#d3b9ff");
-    const max = this.w * (b.phase === "attack" ? 0.43 : 0.65);
+      .setColor(b.phase === "attack" ? "#f0d99e" : "#b2d9ed");
+    const max = this.w * 0.65;
     if (this.spell.width > max)
       this.spell.setFontSize(
         Math.max(13, ((this.small ? 25 : 38) * max) / this.spell.width),
       );
     this.typedText
       ?.setFontSize(this.spell.style.fontSize)
-      .setText(word.slice(0, b.pos));
+      .setText(word.slice(0, b.pos))
+      .setColor(b.phase === "attack" ? "#ffe4a0" : "#78d9ff");
     this.turnLabel?.setText(
-      b.phase === "attack" ? "ТВОЯ АТАКА" : "ЗАЩИТА — ПЕРЕХВАТИ СЛОВО",
+      b.phase === "attack" ? "ТВОЯ АТАКА" : "ТВОЯ ЗАЩИТА",
     );
     this.timerLabel?.setText(b.active ? `${b.remaining} сек.${b.phase === "attack" ? `  ·  Попытки: ${b.triesLeft}/3` : ""}` : "");
     this.hpBar?.setDisplaySize((this.barWidth * b.hp) / 100, 5);
@@ -640,38 +641,13 @@ export class Typewarts extends Phaser.Scene {
   }
   positionWord() {
     if (!this.spell) return;
-    const b = this.battle;
-    const travel =
-      b.phase === "defend" && b.active
-        ? Math.min(
-            1,
-            (b.duration - b.remaining + this.second / 1000) / b.duration,
-          )
-        : 0;
-    this.spell.setPosition(
-      b.phase === "defend" && b.active
-        ? Phaser.Math.Linear(this.w * 0.76, this.w * 0.25, travel)
-        : this.attackAnchor().x,
-      b.phase === "defend" && b.active
-        ? Phaser.Math.Linear(
-            this.keyboardTop * 0.4,
-            this.keyboardTop - 65,
-            travel,
-          )
-        : this.attackAnchor().y,
-    );
-    if (b.phase === "attack") {
-      this.timerLabel?.setPosition(this.spell.x, this.spell.y - 34);
-      this.turnLabel?.setPosition(this.spell.x, this.spell.y - 59);
-    } else {
-      this.timerLabel?.setPosition(this.w / 2, 131);
-      this.turnLabel?.setPosition(this.w / 2, 108);
-    }
-    this.typedText?.setPosition(
-      this.spell.x - this.spell.width / 2,
-      this.spell.y,
-    );
+    const x = this.w / 2, y = this.keyboardTop - 72;
+    this.spell.setPosition(x, y);
+    this.timerLabel?.setPosition(x, y - 38);
+    this.turnLabel?.setPosition(x, y - 64);
+    this.typedText?.setPosition(x - this.spell.width / 2, y);
   }
+
   act(action: Action) {
     const before = this.battle;
     this.battle = reduceBattle(before, action);
@@ -746,7 +722,7 @@ export class Typewarts extends Phaser.Scene {
     }
   }
   castWord(word: string, damage: number) {
-    const start = this.attackAnchor();
+    const start = { x: this.w / 2, y: this.keyboardTop - 72 };
     const end = { x: this.ghost?.x ?? this.w * 0.77,
       y: (this.ghost?.y ?? 300) - (this.ghost?.displayHeight ?? 180) * 0.55 };
     const color = this.battle.power > 1.5 ? 0xa8f3e3 : 0xffd58a;
@@ -810,7 +786,7 @@ export class Typewarts extends Phaser.Scene {
   }
   fizzle() {
     if (!this.hero) return;
-    this.cameras.main.shake(90, 0.002);
+    // Keep the typing prompt steady on errors.
     const spark = this.add
       .image(this.hero.x, this.hero.y - this.hero.displayHeight * 0.4, "spark")
       .setTint(0xe48b6f)

@@ -117,7 +117,7 @@ export function reduceBattle(s: Battle, a: Action): Battle {
           hint:
             s.phase === "attack"
               ? "Атака: набери слово до конца отсчёта."
-              : "Защита: останови летящее слово!",
+              : "Защита: набери слово до конца отсчёта.",
         };
   if (!s.active || s.paused || s.result) return s;
   if (a.type === "tick") {
