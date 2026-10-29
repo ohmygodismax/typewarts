@@ -145,3 +145,11 @@ test("turn limits are shorter, scale with word length and tighten by lesson", ()
     assert.equal(s.remaining, initialDuration);
   }
 });
+
+ test("tutorial completion survives saving and old saves remain compatible", () => {
+  const progress = parseProgress(null);
+  assert.equal(progress.tutorialSeen, undefined);
+  assert.equal(parseProgress(JSON.stringify({ ...progress, tutorialSeen: true })).tutorialSeen, true);
+  assert.equal(parseProgress(JSON.stringify({ ...progress, tutorialSeen: false })).tutorialSeen, false);
+  assert.equal(parseProgress(JSON.stringify({ ...progress, tutorialSeen: "true" })).tutorialSeen, undefined);
+});

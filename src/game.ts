@@ -51,6 +51,7 @@ export type Progress = {
   best: number;
   intro: boolean;
   corridorIntro?: boolean;
+  tutorialSeen?: boolean;
 };
 export const emptyProgress: Progress = {
   campaignVersion: 2,
@@ -80,7 +81,8 @@ export function parseProgress(raw: string | null): Progress {
       !Number.isFinite(p.best) ||
       p.best < 0 ||
       typeof p.intro !== "boolean" ||
-      (p.corridorIntro !== undefined && typeof p.corridorIntro !== "boolean")
+      (p.corridorIntro !== undefined && typeof p.corridorIntro !== "boolean") ||
+      (p.tutorialSeen !== undefined && typeof p.tutorialSeen !== "boolean")
     )
       return { ...emptyProgress };
     if (legacy) {

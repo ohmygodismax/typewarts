@@ -139,6 +139,8 @@ export class Typewarts extends Phaser.Scene {
   enemyBar?: Phaser.GameObjects.Rectangle;
   fingerLabel?: Phaser.GameObjects.Text;
   barWidth = 160;
+  tutorialStep: number | null = null;
+  tutorialFromMenu = false;
   modal = false;
   saveFailed = false;
   stageHeight = 400;
@@ -343,7 +345,9 @@ export class Typewarts extends Phaser.Scene {
     else if (this.mode === "ending") this.drawEnding();
     else {
       this.drawBattle();
-      if (this.battle.result) this.showResult();
+      if (this.tutorialStep !== null) this.drawTutorial();
+      else if (!this.progress.tutorialSeen && this.battle.lesson === 0 && !this.battle.active && !this.battle.result) this.showTutorial();
+      else if (this.battle.result) this.showResult();
       else if (wasModal || this.battle.paused) this.showPause();
     }
   }
@@ -927,6 +931,81 @@ export class Typewarts extends Phaser.Scene {
       .setAlign("center")
       .setWordWrapWidth(Math.min(520, this.w - 48));
   }
+  showTutorial(fromMenu = false) {
+    this.tutorialStep = 0;
+    this.tutorialFromMenu = fromMenu;
+    this.mechanical?.release();
+    this.drawTutorial();
+  }
+  finishTutorial() {
+    this.tutorialStep = null;
+    this.progress.tutorialSeen = true;
+    this.save();
+    this.overlay.removeAll(true);
+    this.modal = false;
+    if (this.tutorialFromMenu) this.showPause();
+  }
+  drawTutorial() {
+    const steps = [
+      {
+        title: "Победи соперника заклинаниями",
+        body: "Слева — твоё здоровье, справа — здоровье соперника. Набирай заклинания, чтобы атаковать и защищаться. Победа — когда здоровье соперника закончится. Если закончится твоё, урок можно повторить.",
+        top: 0, bottom: 100,
+      },
+      {
+        title: "Печатай подсвеченное заклинание",
+        body: "Переключись на русскую раскладку и набирай слово на своей клавиатуре. Подсвеченная буква — следующая. Большие и маленькие буквы подходят одинаково. Пробелы тоже нужно вводить: они отмечены знаком ␣. Ошибся? Продолжай с той же буквы, стирать ничего не нужно.",
+        top: this.keyboardTop - 108, bottom: this.keyboardTop - 42,
+      },
+      {
+        title: "Атакуй и защищайся вовремя",
+        body: "Ходы чередуются: атака наносит урон, защита создаёт щит. В обоих случаях успей набрать слово до конца отсчёта. В атаке три ошибки передают ход сопернику. Если время защиты истечёт, ты потеряешь здоровье. Заклинание сработает само — Enter нажимать не нужно.",
+        top: this.keyboardTop - 168, bottom: this.keyboardTop - 42,
+      },
+      {
+        title: "Подсказки всегда под рукой",
+        body: "Клавиатура внизу подсвечивает нужную клавишу. Под ней — скорость, точность и серия слов без ошибок. Кнопка Ⅱ справа вверху или Esc открывает меню и ставит дуэль на паузу. Там можно снова открыть обучение. Когда будешь готов, нажми «Начать дуэль».",
+        top: this.keyboardTop, bottom: this.h,
+      },
+    ];
+    const index = this.tutorialStep ?? 0;
+    const step = steps[index];
+    this.overlay.removeAll(true);
+    this.modal = true;
+    // Block clicks across the screen, including the undimmed demonstration area.
+    this.rect(this.w / 2, this.h / 2, this.w, this.h, 0x030911, 0, this.overlay).setInteractive();
+    if (step.top > 0)
+      this.rect(this.w / 2, step.top / 2, this.w, step.top, 0x030911, 0.83, this.overlay);
+    if (step.bottom < this.h)
+      this.rect(this.w / 2, (step.bottom + this.h) / 2, this.w, this.h - step.bottom, 0x030911, 0.83, this.overlay);
+    const outline = this.add.graphics().lineStyle(2, GOLD, 0.8);
+    outline.strokeRect(12, step.top + 2, this.w - 24, step.bottom - step.top - 4);
+    this.overlay.add(outline);
+    const width = 840;
+    const x = (this.w - width) / 2;
+    const y = index === 0 ? 180 : index === 3 ? 110 : this.keyboardTop + 38;
+    this.rect(this.w / 2, y + 137, width, 274, INK, 0.98, this.overlay)
+      .setStrokeStyle(1, GOLD, 0.6);
+    this.text(x + 28, y + 20, `ОБУЧЕНИЕ · ${index + 1} / ${steps.length} · время остановлено`, 14, "#b9c4c9", this.overlay);
+    this.text(x + 28, y + 49, step.title, 28, "#e6cb99", this.overlay).setFontFamily("Georgia");
+    this.text(x + 28, y + 94, step.body, 18, "#e7dfd0", this.overlay).setWordWrapWidth(width - 56);
+    if (index > 0)
+      this.button(x + 96, y + 237, "Назад", () => {
+        this.tutorialStep = index - 1;
+        this.drawTutorial();
+      }, this.overlay, 136);
+    else
+      this.button(x + 96, y + 237, "Назад", () => {}, this.overlay, 136)
+        .disableInteractive().setAlpha(0.35);
+    this.button(this.w / 2, y + 237, "Пропустить", () => this.finishTutorial(), this.overlay, 164);
+    this.button(x + width - 112, y + 237, index === steps.length - 1 ? "Готово" : "Далее", () => {
+      if (index === steps.length - 1) this.finishTutorial();
+      else {
+        this.tutorialStep = index + 1;
+        this.drawTutorial();
+      }
+    }, this.overlay, 168);
+  }
   showPause() {
     this.modalBase("Магия подождёт", "Можно немного выдохнуть.");
     this.button(
@@ -975,6 +1054,8 @@ export class Typewarts extends Phaser.Scene {
       this.overlay,
       210,
     );
+    this.button(this.w / 2, this.h * 0.51 + 224, "Обучение",
+      () => this.showTutorial(true), this.overlay, 210);
   }
   showBook() {
     this.modalBase("Книга заклинаний", "");
@@ -1046,6 +1127,7 @@ export class Typewarts extends Phaser.Scene {
   }
   restartGame() {
     this.progress = parseProgress(null);
+    this.tutorialStep = null;
     this.battle = newBattle(0);
     this.chapter = "intro";
     this.mode = "comic";
@@ -1072,6 +1154,22 @@ export class Typewarts extends Phaser.Scene {
   }
   onKey(e: KeyboardEvent) {
     if (this.mode === "ending") return;
+    if (this.tutorialStep !== null) {
+      if (["Escape", "Enter", "ArrowRight", "ArrowLeft", " "].includes(e.key)) e.preventDefault();
+      if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.key === "Escape") this.finishTutorial();
+      else if (e.key === "ArrowLeft" && this.tutorialStep > 0) {
+        this.tutorialStep--;
+        this.drawTutorial();
+      } else if (e.key === "Enter" || e.key === "ArrowRight") {
+        if (this.tutorialStep === 3) this.finishTutorial();
+        else {
+          this.tutorialStep++;
+          this.drawTutorial();
+        }
+      }
+      return;
+    }
     this.mechanical?.down(e.code);
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (this.mode === "comic") {
