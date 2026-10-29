@@ -289,3 +289,16 @@ export const corridorStory: Panel[] = [
     { kind: 'caption', position: 'top-left', text: 'Герой поднимает клавиатуру. Полные формулы, меньше времени. Набери весь текст, включая пробелы, чтобы атаковать или защититься.' },
   ]),
 ];
+
+
+export const epilogueStory: Panel[] = [
+  {
+    id: 'awakening', title: 'Просто сон?', image: 'epilogue-awakening.png',
+    alt: 'Программист просыпается за своим столом и удивлённо смотрит на клавиатуру.',
+    anchors: { hero: { mouth: { x: 0.466, y: 0.347 }, head: { x: 0.442, y: 0.12 } } },
+    bubbles: [
+      { kind: 'caption', position: 'top-left', text: 'Лязг доспехов сменился гулом компьютера. Герой поднял голову и посмотрел на клавиатуру.' },
+      { kind: 'speech', speaker: 'hero', position: 'top-right', text: 'Фух, просто сон… А почему на пробеле написано «Протего»?' },
+    ],
+  },
+];

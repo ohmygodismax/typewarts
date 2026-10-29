@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { stageSize, RENDER_SCALE, TEXT_RESOLUTION } from "./display";
 import { MechanicalKeyboard } from "./keyboard";
-import { story, corridorStory, type Speaker } from "./story";
+import { story, corridorStory, epilogueStory, type Speaker } from "./story";
 import { placeBubble, bubbleTail, dialogueTarget, type Point, type Box, type SpeakerAnchors } from "./comic";
 import {
   lessons,
@@ -27,6 +27,7 @@ const assets = {
   corridorEncounter: "corridor-encounter.png",
   coding: "prologue-coding.png",
   office: "prologue-office.png",
+  awakening: "epilogue-awakening.png",
   refusal: "prologue-refusal.png",
   sorting: "prologue-sorting-v2.png",
   arrival: "arrival.png",
@@ -43,6 +44,7 @@ const imageKeys: Record<string, string> = {
   "corridor-encounter.png": "corridorEncounter",
   "prologue-coding.png": "coding",
   "prologue-office.png": "office",
+  "epilogue-awakening.png": "awakening",
   "prologue-refusal.png": "refusal",
   "prologue-sorting-v2.png": "sorting",
   "arrival.png": "arrival",
@@ -104,10 +106,10 @@ class Loading extends Phaser.Scene {
 export class Typewarts extends Phaser.Scene {
   progress: Progress = parseProgress(null);
   battle = newBattle();
-  mode: "comic" | "battle" = "comic";
-  chapter: "intro" | "corridor" = "intro";
+  mode: "comic" | "battle" | "ending" = "comic";
+  chapter: "intro" | "corridor" | "epilogue" = "intro";
   get currentStory() {
-    return this.chapter === "corridor" ? corridorStory : story;
+    return this.chapter === "epilogue" ? epilogueStory : this.chapter === "corridor" ? corridorStory : story;
   }
   page = 0;
   revealed = 1;
@@ -332,6 +334,7 @@ export class Typewarts extends Phaser.Scene {
     this.modal = false;
     this.cameras.main.setBackgroundColor("#0b1420");
     if (this.mode === "comic") this.drawComic();
+    else if (this.mode === "ending") this.drawEnding();
     else {
       this.drawBattle();
       if (this.battle.result) this.showResult();
@@ -492,7 +495,7 @@ export class Typewarts extends Phaser.Scene {
     const done = this.revealed >= this.currentStory[this.page].bubbles.length;
     const label = done
       ? this.page === this.currentStory.length - 1
-        ? this.chapter === "corridor" ? "К испытанию" : "Начать игру"
+        ? this.chapter === "epilogue" ? "Далее" : this.chapter === "corridor" ? "К испытанию" : "Начать игру"
         : "Следующий кадр"
       : "Продолжить";
     this.button(x, y, label, () => this.nextPage(), this.hud, width, "Enter");
@@ -512,6 +515,11 @@ export class Typewarts extends Phaser.Scene {
       this.revealed = 1;
       this.render();
     } else {
+      if (this.chapter === "epilogue") {
+        this.mode = "ending";
+        this.render();
+        return;
+      }
       if (this.chapter === "corridor") this.progress.corridorIntro = true;
       else this.progress.intro = true;
       this.save();
@@ -519,6 +527,20 @@ export class Typewarts extends Phaser.Scene {
       this.battle = newBattle(this.chapter === "corridor" ? 5 : this.progress.unlocked);
       this.render();
     }
+  }
+  drawEnding() {
+    this.cover("awakening", 0, 0, this.w, this.h);
+    const shade = this.rect(this.w / 2, this.h / 2, this.w, this.h, 0x050912, 1).setAlpha(0);
+    const title = this.text(this.w / 2, this.h * 0.44, "Продолжение следует…", 46, "#e6cb99")
+      .setFontFamily("Georgia").setOrigin(0.5).setAlpha(0);
+    const result = this.text(this.w / 2, this.h * 0.54,
+      `Страж побеждён · ${accuracy(this.battle.correct, this.battle.attempts)}% точности`, 17, "#b9c4c9")
+      .setOrigin(0.5).setAlpha(0);
+    this.tweens.add({ targets: shade, alpha: 1, duration: 900 });
+    this.tweens.add({ targets: [title, result], alpha: 1, delay: 900, duration: 650,
+      onComplete: () => {
+        this.button(this.w / 2, this.h * 0.67, "Повторить испытание", () => this.startLesson(5), this.hud, 240);
+      } });
   }
   drawBattle() {
     const width = Math.min(1200, (this.w - 64) * 0.85);
@@ -938,6 +960,16 @@ export class Typewarts extends Phaser.Scene {
   }
   showResult() {
     const win = this.battle.result === "win";
+    if (win && this.battle.lesson === 5) {
+      this.chapter = "epilogue";
+      this.mode = "comic";
+      this.page = 0;
+      this.revealed = 1;
+      this.modal = false;
+      this.second = 0;
+      this.render();
+      return;
+    }
     this.modalBase(
       win ? "Заклинание освоено!" : "Попробуем ещё раз",
       win
@@ -984,6 +1016,7 @@ export class Typewarts extends Phaser.Scene {
     this.render();
   }
   onKey(e: KeyboardEvent) {
+    if (this.mode === "ending") return;
     this.mechanical?.down(e.code);
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (this.mode === "comic") {

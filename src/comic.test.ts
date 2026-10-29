@@ -33,8 +33,8 @@ test('tails point to speakers on all four sides and stop before the face', () =>
 
 test('speech and thoughts use separate anatomical anchors', async () => {
   const { dialogueTarget } = await import('./comic');
-  const { story, corridorStory } = await import('./story');
-  for (const panel of [...story, ...corridorStory]) {
+  const { story, corridorStory, epilogueStory } = await import('./story');
+  for (const panel of [...story, ...corridorStory, ...epilogueStory]) {
     if (panel.hero || panel.ghost) continue;
     for (const bubble of panel.bubbles) {
       if (bubble.kind === 'caption') continue;
