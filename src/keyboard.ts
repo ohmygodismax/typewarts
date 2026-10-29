@@ -7,6 +7,7 @@ export class MechanicalKeyboard {
       body: Phaser.GameObjects.Image;
       label: Phaser.GameObjects.Text;
       y: number;
+      labelY: number;
       char: string;
     }
   >();
@@ -43,9 +44,9 @@ export class MechanicalKeyboard {
       const body = scene.add.image(xx, yy, "keycap")
         .setDisplaySize(w * unit - gap + 4, h + 5);
       const txt = scene.add
-        .text(xx, yy, label, {
+        .text(xx, yy - (h + 5) * 0.12, label, {
           fontFamily: "Arial",
-          fontSize: (label.length > 2 ? 12 : 16) + "px",
+          fontSize: "16px",
           color: "#f4e8d0",
           align: "center",
           resolution: TEXT_RESOLUTION,
@@ -53,7 +54,7 @@ export class MechanicalKeyboard {
         })
         .setOrigin(0.5);
       parent.add([body, txt]);
-      this.keys.set(code, { body, label: txt, y: yy, char });
+      this.keys.set(code, { body, label: txt, y: yy, labelY: txt.y, char });
     };
     key("Escape", "Esc", 0, 0);
     for (let i = 1; i <= 12; i++)
@@ -153,6 +154,16 @@ export class MechanicalKeyboard {
     key("NumpadEnter", "↵", 22.5, 4.35);
     key("Numpad0", "0", 19.5, 5.35, 2, "0");
     key("NumpadDecimal", ".", 21.5, 5.35, 1, ".");
+    // Use one font size for every legend, fitted to the painted top face.
+    let fontSize = 16;
+    for (const { body, label } of this.keys.values()) {
+      if (!label.text) continue;
+      fontSize = Math.min(fontSize,
+        16 * body.displayWidth * 0.62 / label.width,
+        16 * body.displayHeight * 0.5 / label.height);
+    }
+    const commonFontSize = Math.floor(fontSize);
+    for (const { label } of this.keys.values()) label.setFontSize(commonFontSize);
   }
   paint() {
     for (const [code, k] of this.keys) {
@@ -162,7 +173,7 @@ export class MechanicalKeyboard {
         .setY(k.y + (down ? 3 : 0))
         .setTint(down ? 0xffd480 : next ? 0xffe7a8 : 0xffffff);
       k.label
-        .setY(k.y + (down ? 3 : 0))
+        .setY(k.labelY + (down ? 3 : 0))
         .setColor(down ? "#fff6db" : next ? "#ffe1a0" : "#f4e8d0");
     }
   }

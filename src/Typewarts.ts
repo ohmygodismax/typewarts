@@ -496,6 +496,7 @@ export class Typewarts extends Phaser.Scene {
       targets: ghost,
       y: ghost.y - 5,
       duration: 1900,
+      ease: "Sine.easeInOut",
       yoyo: true,
       repeat: -1,
     });
@@ -1034,7 +1035,7 @@ export function launchGame(parent: HTMLElement) {
     },
     scene: [Loading, Typewarts],
     audio: { noAudio: true },
-    render: { antialias: true },
+    render: { antialias: true, pixelArt: false, roundPixels: false },
     input: { keyboard: true },
   });
 }
